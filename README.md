@@ -1,4 +1,4 @@
-# Context 1: only CDC
+# Context: only CDC
 
 - We have a Users table (fields: user_id, first_name, last_name) in a source PostgreSQL database.
 - We have a Wages table (fields: user_id, wage) in a soure PostgreSQL database.
@@ -11,38 +11,19 @@
 
 ![alt text](https://github.com/bao2902/logbasedcdc/blob/main/LogBasedCDC_1.PNG)
 
-# Context 2: CDC + transform
-
-- We have a Users table (fields: user_id, first_name, last_name) in a source PostgreSQL database.
-- We have a Wages table (fields: user_id, wage) in a soure PostgreSQL database.
-- We have a User_Wages table (fields: user_id, full_name, wage) in a sink PostgreSQL database.
-- We want to synchronize the Change Data Capture (CDC) to the table User_Wages in a sink PostgreSQL database when the tables Users and Wages are inserted, updated, or deleted in the source PostgreSQL database.
-- This synchonization includes the data tranforming as following:
-+ User_Wages.user_id = Users.user_id
-+ User_Wages.full_name = Users.first_name + ' ' + Users.last_name
-+ User_Wages.wage = Wages.wage
-- We expect this synchonization happenning in near-real-time.
-
-![alt text](https://github.com/bao2902/logbasedcdc/blob/main/LogBasedCDC_4.png)
-
-![alt text](https://github.com/bao2902/logbasedcdc/blob/main/LogBasedCDC_2.PNG)
-
-
 # Environment
 
 "docker-compose.yml" includes the following containers:
 - Zookeeper
 - Kafka
-- kSQL database server
-- kSQL database client
-- Source PostgreSQL database
-- Sink PostgreSQL database
+- PostgreSQL source database 1
+- PostgreSQL source database 2
+- PostgreSQL sink database
 
 "config" folder includes the following configurations:
-- Source PostgreSQL config for Users and Wages tables (connect-postgres-source.properties)
-- Sink PostgreSQL config for Users table (connect-postgres-sink-users.properties)
-- Sink PostgreSQL config for Wages table (connect-postgres-sink-wages.properties)
-- Sink PostgreSQL config for User_Wages table (connect-postgres-sink-user-wages.properties)
+- PostgreSQL source config for Users and Wages tables (connect-postgres-source.properties)
+- PostgreSQL sink config for Users table (connect-postgres-sink-users.properties)
+- PostgreSQL sink config for Wages table (connect-postgres-sink-wages.properties)
 
 "plugins" folder includes the following plugins:
 - Debezium PostgreSQL source connector (debezium-connector-postgres)
@@ -60,11 +41,11 @@ sudo docker build -t nashtech/kafka .
 sudo docker-compose up -d
 
 
-# Steps to create source PosgreeSQL tables:
+# Steps to create PosgreeSQL source 1 tables:
 
-1. Access source PostgreSQL container
+1. Access PostgreSQL source container 1
 
-sudo docker exec -it  postgres-source /bin/bash
+sudo docker exec -it  postgres-source-1 /bin/bash
 
 psql -U postgres
 
@@ -74,7 +55,16 @@ CREATE TABLE users(user_id INTEGER, first_name VARCHAR(200), last_name VARCHAR(2
 
 INSERT INTO users VALUES(1, 'first 1', 'last 1');
 
-3. Create Wages table and insert 1 record
+
+# Steps to create PosgreeSQL source 2 tables:
+
+1. Access PostgreSQL source container 2
+
+sudo docker exec -it  postgres-source-2 /bin/bash
+
+psql -U postgres
+
+2. Create Wages table and insert 1 record
 
 CREATE TABLE wages(user_id INTEGER, wage integer, PRIMARY KEY (user_id));
 
@@ -82,9 +72,9 @@ INSERT INTO wages VALUES(1, '1000');
 
 
 
-# Steps to create sink PosgreeSQL tables:
+# Steps to create PosgreeSQL sink tables:
 
-1. Access sink PostgreSQL container
+1. Access PostgreSQL sink container
 
 sudo docker exec -it  postgres-sink /bin/bash
 
